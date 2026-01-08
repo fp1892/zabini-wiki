@@ -86,17 +86,13 @@ h1{
 }
 
 .pill{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:10px 12px;
-  border-radius:999px;
+  padding:10px 14px;
+  border-radius:10px;
   border:1px solid var(--border);
-  background: rgba(0,0,0,.25);
-  box-shadow:0 10px 24px rgba(0,0,0,.45);
-  transition: transform .15s ease;
+  background: rgba(0,0,0,.35);
   color: var(--text);
-  cursor:pointer;
+  font-weight:600;
+  letter-spacing:.4px;
 }
 
 .pill:hover{ transform: translateY(-1px); }
@@ -202,15 +198,12 @@ button:disabled{
 }
 
 .badge{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
   padding:6px 10px;
-  border-radius:999px;
+  border-radius:8px;
   border:1px solid rgba(212,175,55,.25);
   background: rgba(0,0,0,.25);
-  color: var(--gold-soft);
-  font-weight: 800;
+  color: var(--muted);
+  font-size:.85rem;
 }
 
 .footer{

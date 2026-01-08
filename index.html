@@ -1,54 +1,57 @@
 <div class="card">
   <h2>Documentation Hub</h2>
   <p class="kicker">
-    This wiki contains all internal documentation for the Zabini MVP system.
-    Each section below focuses on a specific aspect of the project.
+    This wiki serves as the central documentation space for the Zabini MVP system.
+    It is intended to provide long-term, maintainable documentation for both
+    technical maintainers and application users.
+  </p>
+  <p class="small">
+    All documentation is protected by the same login mechanism as the MVP application itself.
+    Access is intentionally restricted to ensure internal consistency and prevent misuse.
   </p>
 </div>
 
 <div class="card">
-  <h2>📜 MVP Code Documentation</h2>
+  <h2>MVP Code Documentation</h2>
   <p class="small">
-    Technical documentation for developers and maintainers.
-    Explains architecture, Firebase integration, security, state management,
-    admin workflows, undo logic, and design decisions.
+    This section documents the complete technical implementation of the MVP system.
+    It explains architectural decisions, data flow, authentication concepts, Firestore
+    state management, admin functionality, undo mechanics and long-term maintenance considerations.
   </p>
-  <div style="display:flex; gap:10px; margin-top:10px;">
-    <span class="badge">Developer</span>
-    <span class="badge">Active</span>
-    <span class="badge">Internal</span>
-  </div>
-  <div style="margin-top:14px;">
-    <a class="pill" href="/mvp-code/">Open MVP Code Wiki →</a>
+  <p class="small">
+    This documentation is written for developers, maintainers and technically inclined administrators.
+    It is intentionally verbose and explanatory rather than tutorial-style.
+  </p>
+  <div style="margin-top:16px;">
+    <a class="pill" href="/mvp-code/">Open technical documentation</a>
   </div>
 </div>
 
 <div class="card">
-  <h2>🧭 MVP Application Guide</h2>
+  <h2>MVP Application Documentation</h2>
   <p class="small">
-    User-facing documentation for the Hellcats MVP application.
-    Describes all buttons, workflows, scoring logic, cooldown rules,
-    MVP calculation, admin functions and undo behavior.
+    This section describes the functional behavior of the MVP application itself.
+    It explains all available actions, buttons, workflows and rules from a user and admin perspective.
   </p>
-  <div style="display:flex; gap:10px; margin-top:10px;">
-    <span class="badge">User</span>
-    <span class="badge">Active</span>
-    <span class="badge">Live</span>
-  </div>
-  <div style="margin-top:14px;">
-    <a class="pill" href="/mvp-app/">Open MVP App Wiki →</a>
+  <p class="small">
+    The goal is to make the system transparent, predictable and fair for all participants.
+    Every calculation and rule is documented explicitly.
+  </p>
+  <div style="margin-top:16px;">
+    <a class="pill" href="/mvp-app/">Open application documentation</a>
   </div>
 </div>
 
 <div class="card">
-  <h2>🗂 Future Documentation</h2>
+  <h2>Documentation Scope</h2>
   <p class="small">
-    Additional documentation sections may be added here in the future:
+    This wiki intentionally avoids short summaries. Instead, it focuses on precise
+    explanations, explicit assumptions and clear reasoning behind every system behavior.
   </p>
   <ul class="small">
-    <li>Season handling & resets</li>
-    <li>Rule variations & scoring presets</li>
-    <li>Public API or export formats</li>
-    <li>Clan onboarding guide</li>
+    <li>No undocumented side effects</li>
+    <li>No hidden rules</li>
+    <li>No implicit assumptions</li>
+    <li>Long-term maintainability over brevity</li>
   </ul>
 </div>

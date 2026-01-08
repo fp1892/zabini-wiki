@@ -1,116 +1,119 @@
 <div class="card">
-  <h2>Overview</h2>
+  <h2>Introduction</h2>
   <p class="kicker">
-    This document describes the complete technical architecture of the
-    Hellcats MVP application. It explains design decisions, data structures,
-    security concepts and runtime behavior.
+    This document provides a comprehensive technical description of the Hellcats MVP system.
+    It is not a quick-start guide. Instead, it aims to document the system in a way that allows
+    future developers to fully understand the design, constraints and trade-offs.
   </p>
 </div>
 
 <div class="card">
-  <h2>1. Architectural Principles</h2>
+  <h2>1. Design Philosophy</h2>
+  <p class="small">
+    The MVP system was intentionally designed to be simple, transparent and cost-free.
+    Every technical decision was made with long-term maintainability and minimal operational
+    overhead in mind.
+  </p>
   <ul class="small">
-    <li>Static frontend (HTML / CSS / ES Modules)</li>
-    <li>No server-side backend</li>
-    <li>Centralized state stored in Firestore</li>
-    <li>Real-time synchronization for all users</li>
-    <li>UI-level access control via password gate</li>
+    <li>No backend server</li>
+    <li>No user accounts</li>
+    <li>No deployment pipelines</li>
+    <li>No paid infrastructure</li>
   </ul>
 </div>
 
 <div class="card">
-  <h2>2. Hosting Model</h2>
-  <details open>
-    <summary>GitHub Pages</summary>
-    <p class="small">
-      GitHub Pages serves all static assets. No runtime code is executed on the server.
-      This guarantees zero hosting costs and high availability.
-    </p>
-  </details>
-  <details>
-    <summary>Why no backend?</summary>
-    <p class="small">
-      Firestore already provides authentication, persistence and real-time sync.
-      A backend would only add cost and complexity.
-    </p>
-  </details>
-</div>
-
-<div class="card">
-  <h2>3. Firebase Authentication</h2>
+  <h2>2. Static Frontend Architecture</h2>
   <p class="small">
-    The application uses anonymous authentication. This is required so that
-    Firestore security rules can distinguish authenticated users from unauthenticated visitors.
+    The application is served entirely as static files (HTML, CSS, JavaScript) via GitHub Pages.
+    This guarantees high availability and eliminates all runtime hosting costs.
   </p>
-  <pre><code>signInAnonymously(auth)</code></pre>
+  <p class="small">
+    All logic is executed client-side. The browser is considered a trusted execution environment
+    only after authentication has been completed.
+  </p>
 </div>
 
 <div class="card">
-  <h2>4. Password Gate (UI-Level Security)</h2>
+  <h2>3. Authentication Strategy</h2>
   <p class="small">
-    The password gate is a client-side UI barrier. It does not replace Firestore
-    security rules, but prevents unauthorized access to the interface.
+    Firebase Anonymous Authentication is used exclusively to satisfy Firestore security requirements.
+    It does not represent a user identity in the classical sense.
+  </p>
+  <p class="small">
+    Authentication is therefore split into two layers:
   </p>
   <ul class="small">
-    <li>Password is never stored in plaintext</li>
-    <li>SHA-256 hash comparison against Firestore</li>
-    <li>Overlay blocks UI until validated</li>
+    <li>Technical authentication (Firebase anonymous auth)</li>
+    <li>User-facing access control (password gate)</li>
   </ul>
+</div>
+
+<div class="card">
+  <h2>4. Password Gate (UI-Level Access Control)</h2>
+  <p class="small">
+    The password gate is implemented purely at the UI level. It blocks rendering of the application
+    until the correct password has been entered.
+  </p>
+  <p class="small">
+    Passwords are never stored in plaintext. Instead, SHA-256 hashes are compared against
+    values stored in Firestore.
+  </p>
 </div>
 
 <div class="card">
   <h2>5. Firestore Data Model</h2>
+  <p class="small">
+    The entire application state is stored in a single Firestore document. This decision greatly
+    simplifies synchronization and reduces the likelihood of partial or inconsistent updates.
+  </p>
   <pre><code>
-config/security
-  passwordHash : string
-  adminHash    : string
-
-state/main
-  persons      : Person[]
-  events       : Event[]
-  mvpCooldown  : number
-
-state/undo
-  meta
-  state
+state/main:
+  persons: Person[]
+  events: Event[]
+  mvpCooldown: number
   </code></pre>
 </div>
 
 <div class="card">
   <h2>6. Real-Time Synchronization</h2>
   <p class="small">
-    The application subscribes to Firestore using <code>onSnapshot</code>.
-    Every connected client sees updates immediately.
+    The application subscribes to Firestore updates using a real-time listener.
+    Any change to the state document is immediately propagated to all connected clients.
+  </p>
+  <p class="small">
+    This behavior is similar to collaborative document editing systems and ensures that all users
+    always see the same data.
   </p>
 </div>
 
 <div class="card">
   <h2>7. Admin Mode</h2>
   <p class="small">
-    Admin mode is session-based and stored only in the browser.
-    Unlocking admin enables destructive actions.
+    Administrative actions are intentionally separated from regular application usage.
+    Admin mode is unlocked using a dedicated password and stored only in the current browser session.
   </p>
-  <ul class="small">
-    <li>Import JSON</li>
-    <li>Reset application state</li>
-    <li>Undo last destructive action</li>
-  </ul>
-</div>
-
-<div class="card">
-  <h2>8. Undo System</h2>
   <p class="small">
-    Before any destructive operation, the current state is copied to
-    <code>state/undo</code>. Undo restores that snapshot back to <code>state/main</code>.
+    Admin mode enables destructive operations and should therefore be used sparingly.
   </p>
 </div>
 
 <div class="card">
-  <h2>9. Design Decisions</h2>
-  <ul class="small">
-    <li>Single-document state simplifies reasoning</li>
-    <li>No user accounts reduce friction</li>
-    <li>Firestore chosen for real-time capability</li>
-    <li>ES Modules for clean dependency loading</li>
-  </ul>
+  <h2>8. Undo Mechanism</h2>
+  <p class="small">
+    Before any destructive action (import or reset), the current application state is copied
+    to a dedicated undo document.
+  </p>
+  <p class="small">
+    Undo restores the exact previous state without attempting to merge or reconcile changes.
+    This guarantees deterministic behavior.
+  </p>
+</div>
+
+<div class="card">
+  <h2>9. Maintenance Considerations</h2>
+  <p class="small">
+    The system is intentionally conservative. New features should be evaluated carefully to avoid
+    increasing complexity or introducing hidden state.
+  </p>
 </div>
