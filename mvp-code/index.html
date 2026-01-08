@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>MVP Code – Zabini Wiki</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../assets/wiki.css" />
+</head>
+<body>
+
+<!-- Login Overlay + Protected Root (gleich wie Landing) -->
+<div id="loginOverlay">
+  <div id="loginPanel">
+    <h2>MVP Code</h2>
+    <div class="small">Bitte Passwort eingeben.</div>
+    <form id="loginForm" style="margin-top:10px;">
+      <input id="passwordInput" type="password" placeholder="Passwort" required />
+      <div style="margin-top:10px;"><button type="submit">Anmelden</button></div>
+    </form>
+    <div id="loginStatus"></div>
+  </div>
+</div>
+
+<div id="protectedRoot" style="display:none;">
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <div class="logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M4 7l4 6 4-8 4 8 4-6v12H4V7z" stroke="rgba(212,175,55,.95)" stroke-width="1.7" />
+          </svg>
+        </div>
+        <div>
+          <h1>MVP CODE</h1>
+          <div class="subtitle">Haargenaue Dokumentation von Architektur & Code-Abschnitten</div>
+        </div>
+      </div>
+      <div class="nav">
+        <a class="pill" href="/">🏠 Wiki</a>
+        <a class="pill" href="/mvp-app/">🧭 MVP App</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>1) Zielbild & Hosting</h2>
+      <p class="kicker">
+        Static Hosting (GitHub Pages) + Cloud-State (Firebase Firestore) + Gate (Passwort) + HTTPS.
+      </p>
+      <details open>
+        <summary>Komponenten</summary>
+        <ul class="small">
+          <li><b>GitHub Pages:</b> liefert HTML/CSS/JS (kostenlos)</li>
+          <li><b>Firebase Auth (Anonymous):</b> technisches Login, damit Firestore-Rules greifen</li>
+          <li><b>Firestore:</b> zentraler Live-State (alle sehen denselben Stand)</li>
+          <li><b>Passwort-Gate:</b> UI-Sperre (Overlay) bis Passwort stimmt (kein User-System)</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>2) Wichtiger Learn: ES-Module auf GitHub Pages</h2>
+      <p class="kicker">
+        Damit Firebase-Imports funktionieren, muss das Script als ES-Module geladen werden.
+      </p>
+      <pre><code>&lt;script type="module" src="app_v2.js"&gt;&lt;/script&gt;</code></pre>
+      <details>
+        <summary>Warum war das entscheidend?</summary>
+        <div class="small">
+          Ohne <b>type="module"</b> funktionieren <code>import ... from ...</code> nicht.
+          Dann läuft dein JS nicht korrekt, und die App wirkt “ganz normal” (nur lokal).
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>3) Firebase Setup im Code</h2>
+      <p class="kicker">
+        Firebase wird per CDN eingebunden (keine Bundler nötig).
+      </p>
+      <details open>
+        <summary>Imports (CDN)</summary>
+        <pre><code>import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";</code></pre>
+      </details>
+
+      <details open>
+        <summary>Init + Auth</summary>
+        <div class="small">
+          <ul>
+            <li><code>initializeApp(firebaseConfig)</code> initialisiert das Firebase-Projekt.</li>
+            <li><code>signInAnonymously(auth)</code> erzeugt eine Auth-Session, damit Firestore-Schreibrechte funktionieren.</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>4) Firestore Datenmodell</h2>
+      <details open>
+        <summary>Dokumente</summary>
+        <pre><code>config/security
+  - passwordHash (string)
+  - adminHash (string, optional)
+
+state/main
+  - persons: []
+  - events: []
+  - mvpCooldown: number
+
+state/undo
+  - meta: { action, savedAt }
+  - state: { persons, events, mvpCooldown }</code></pre>
+      </details>
+
+      <details>
+        <summary>Warum `state/main` als ein Dokument?</summary>
+        <div class="small">
+          Für kleine Gruppen ist es am einfachsten: <b>ein State-Dokument</b>, das per
+          <code>onSnapshot</code> live synchronisiert wird. Kein komplexes Schema nötig.
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>5) Live-Sync (Realtime)</h2>
+      <p class="kicker">
+        <code>onSnapshot(stateRef, ...)</code> macht die App zu “Google Docs Style” Live-State: alle sehen denselben Stand.
+      </p>
+      <details open>
+        <summary>Ablauf</summary>
+        <div class="small">
+          <ol>
+            <li>Login (UI-Gate) wird erfolgreich.</li>
+            <li>Start: <code>onSnapshot</code> subscribed → Daten kommen rein.</li>
+            <li>Bei jeder Änderung: UI wird aktualisiert (<code>render()</code>).</li>
+            <li>Speichern schreibt per <code>updateDoc</code> zurück.</li>
+          </ol>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>6) Passwort-Gate</h2>
+      <details open>
+        <summary>Prinzip</summary>
+        <div class="small">
+          Das Gate schützt die UI, nicht Firebase selbst:
+          <ul>
+            <li>Overlay blockiert die App.</li>
+            <li>Passwort wird gehasht (SHA-256) und mit Firestore <code>passwordHash</code> verglichen.</li>
+            <li>Bei Erfolg wird das Overlay entfernt und die App sichtbar.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary>Warum Hash?</summary>
+        <div class="small">
+          Kein Klartext-Passwort in Firestore. Der Hash ist nicht “zurückrechenbar” (praktisch).
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>7) Admin / Backup / Import / Reset / Undo</h2>
+      <details open>
+        <summary>Admin Unlock</summary>
+        <div class="small">
+          Admin-Mode ist eine lokale Session (Browser) via <code>sessionStorage</code>.
+          Import/Reset/Undo werden nur freigeschaltet, wenn das Admin-Passwort gegen <code>adminHash</code> validiert.
+        </div>
+      </details>
+      <details open>
+        <summary>Undo</summary>
+        <div class="small">
+          Vor <b>Import</b> oder <b>Reset</b> wird automatisch ein Snapshot nach <code>state/undo</code> geschrieben.
+          Der Undo-Button schreibt diesen Snapshot zurück nach <code>state/main</code>.
+        </div>
+      </details>
+      <details>
+        <summary>Export</summary>
+        <div class="small">
+          Export erzeugt eine JSON-Datei aus dem aktuellen <code>state/main</code> und startet Download.
+        </div>
+      </details>
+    </div>
+
+    <div class="footer">
+      Tipp: Wenn du willst, kann ich diese Seite auch automatisch aus deinem aktuellen `app_v2.js` generieren lassen (künftige Wartung).
+    </div>
+  </div>
+</div>
+
+<script type="module" src="../assets/wiki.js"></script>
+</body>
+</html>
