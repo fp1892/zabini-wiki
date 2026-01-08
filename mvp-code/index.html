@@ -1,119 +1,459 @@
-<div class="card">
-  <h2>Introduction</h2>
-  <p class="kicker">
-    This document provides a comprehensive technical description of the Hellcats MVP system.
-    It is not a quick-start guide. Instead, it aims to document the system in a way that allows
-    future developers to fully understand the design, constraints and trade-offs.
-  </p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zabini Wiki · MVP Code</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/assets/wiki.css" />
+</head>
+<body>
+
+<!-- LOGIN GATE -->
+<div id="loginOverlay">
+  <div id="loginPanel">
+    <h2>MVP Code Documentation</h2>
+    <div class="small">
+      This documentation is protected by the same password gate as the MVP application.
+    </div>
+    <form id="loginForm" style="margin-top:10px;">
+      <input id="passwordInput" type="password" placeholder="Password" required />
+      <button type="submit" style="margin-top:10px;">Unlock</button>
+    </form>
+    <div id="loginStatus"></div>
+  </div>
 </div>
 
-<div class="card">
-  <h2>1. Design Philosophy</h2>
-  <p class="small">
-    The MVP system was intentionally designed to be simple, transparent and cost-free.
-    Every technical decision was made with long-term maintainability and minimal operational
-    overhead in mind.
-  </p>
-  <ul class="small">
-    <li>No backend server</li>
-    <li>No user accounts</li>
-    <li>No deployment pipelines</li>
-    <li>No paid infrastructure</li>
-  </ul>
-</div>
+<!-- PROTECTED CONTENT -->
+<div id="protectedRoot" style="display:none;">
+  <div class="container">
 
-<div class="card">
-  <h2>2. Static Frontend Architecture</h2>
-  <p class="small">
-    The application is served entirely as static files (HTML, CSS, JavaScript) via GitHub Pages.
-    This guarantees high availability and eliminates all runtime hosting costs.
-  </p>
-  <p class="small">
-    All logic is executed client-side. The browser is considered a trusted execution environment
-    only after authentication has been completed.
-  </p>
-</div>
+    <div class="header">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>MVP Code</h1>
+          <div class="kicker">Technical architecture, implementation, and maintenance documentation</div>
+        </div>
+      </div>
+      <div class="nav">
+        <a class="pill" href="/">Documentation Hub</a>
+        <a class="pill" href="/mvp-app/">MVP Application</a>
+      </div>
+    </div>
 
-<div class="card">
-  <h2>3. Authentication Strategy</h2>
-  <p class="small">
-    Firebase Anonymous Authentication is used exclusively to satisfy Firestore security requirements.
-    It does not represent a user identity in the classical sense.
-  </p>
-  <p class="small">
-    Authentication is therefore split into two layers:
-  </p>
-  <ul class="small">
-    <li>Technical authentication (Firebase anonymous auth)</li>
-    <li>User-facing access control (password gate)</li>
-  </ul>
-</div>
+    <div class="card">
+      <h2>Document purpose</h2>
+      <p class="small">
+        This document is the authoritative technical reference for the Hellcats MVP system
+        (frontend + Firebase). It is designed to remain useful long-term, including for maintainers
+        who were not involved in the original implementation.
+      </p>
+      <p class="small">
+        This is intentionally verbose. The focus is clarity, deterministic behavior, and maintainability,
+        not minimal text length.
+      </p>
+    </div>
 
-<div class="card">
-  <h2>4. Password Gate (UI-Level Access Control)</h2>
-  <p class="small">
-    The password gate is implemented purely at the UI level. It blocks rendering of the application
-    until the correct password has been entered.
-  </p>
-  <p class="small">
-    Passwords are never stored in plaintext. Instead, SHA-256 hashes are compared against
-    values stored in Firestore.
-  </p>
-</div>
+    <div class="card">
+      <h2>Table of contents</h2>
+      <ul class="small">
+        <li><a href="#scope">1. Scope and non-goals</a></li>
+        <li><a href="#architecture">2. Overall architecture</a></li>
+        <li><a href="#static-hosting">3. Static hosting model (GitHub Pages)</a></li>
+        <li><a href="#firebase">4. Firebase services used</a></li>
+        <li><a href="#auth">5. Authentication strategy</a></li>
+        <li><a href="#gate">6. Password gate design</a></li>
+        <li><a href="#data-model">7. Firestore data model</a></li>
+        <li><a href="#realtime">8. Real-time synchronization</a></li>
+        <li><a href="#writes">9. Write strategy and consistency</a></li>
+        <li><a href="#admin">10. Admin mode</a></li>
+        <li><a href="#backup">11. Export / Import</a></li>
+        <li><a href="#undo">12. Undo mechanism</a></li>
+        <li><a href="#security-rules">13. Firestore security rules</a></li>
+        <li><a href="#deployment">14. Deployment and DNS</a></li>
+        <li><a href="#debugging">15. Debugging checklist</a></li>
+        <li><a href="#maintenance">16. Maintenance & extension guidelines</a></li>
+      </ul>
+    </div>
 
-<div class="card">
-  <h2>5. Firestore Data Model</h2>
-  <p class="small">
-    The entire application state is stored in a single Firestore document. This decision greatly
-    simplifies synchronization and reduces the likelihood of partial or inconsistent updates.
-  </p>
-  <pre><code>
-state/main:
+    <div class="card" id="scope">
+      <h2>1. Scope and non-goals</h2>
+      <p class="small">
+        The MVP system is a lightweight, cost-free application that tracks participants, event placements,
+        and computes an MVP candidate using transparent rules. It is built for small groups where:
+      </p>
+      <ul class="small">
+        <li>operational simplicity is preferred over enterprise-grade identity management</li>
+        <li>a single shared “truth” for all users is required</li>
+        <li>real-time synchronization is beneficial</li>
+        <li>hosting costs should be essentially zero</li>
+      </ul>
+
+      <div class="section-divider"></div>
+
+      <p class="small">
+        Explicit non-goals (things intentionally not implemented):
+      </p>
+      <ul class="small">
+        <li>No individual user accounts, profiles, or permissions per person.</li>
+        <li>No complex multi-document relational schema. The state is intentionally centralized.</li>
+        <li>No backend services (server) or API layer. Firestore acts as persistence + sync layer.</li>
+        <li>No guaranteed conflict-free merging across simultaneous admin operations.</li>
+      </ul>
+
+      <p class="small">
+        These choices reduce complexity and keep the system easy to operate.
+      </p>
+    </div>
+
+    <div class="card" id="architecture">
+      <h2>2. Overall architecture</h2>
+      <p class="small">
+        The system uses a static frontend hosted on GitHub Pages and a shared cloud state stored in Firestore.
+        All clients subscribe to the same Firestore document and render the same state.
+      </p>
+
+      <details open>
+        <summary>High-level data flow</summary>
+        <pre><code>Browser (HTML/CSS/JS)
+  - renders UI
+  - authenticates anonymously
+  - checks password gate
+  - subscribes to Firestore state via real-time listener
+  - writes updates back to Firestore
+
+Firestore (Cloud)
+  - stores shared application state in state/main
+  - stores password/admin hashes in config/security
+  - stores undo snapshot in state/undo</code></pre>
+      </details>
+
+      <p class="small">
+        The architecture is intentionally “backendless”. Firestore provides a managed storage layer
+        and real-time updates. GitHub Pages provides globally available static hosting.
+      </p>
+    </div>
+
+    <div class="card" id="static-hosting">
+      <h2>3. Static hosting model (GitHub Pages)</h2>
+      <p class="small">
+        GitHub Pages serves static files only. There is no server-side computation. This provides:
+      </p>
+      <ul class="small">
+        <li>zero hosting cost</li>
+        <li>simple deployment (push to main branch)</li>
+        <li>stable HTTPS via GitHub-managed certificates</li>
+      </ul>
+
+      <p class="small">
+        Important implication: Because the site is static, all runtime logic must run in the browser.
+        For Firebase usage without a bundler, the application imports Firebase SDK modules from the official CDN.
+      </p>
+    </div>
+
+    <div class="card" id="firebase">
+      <h2>4. Firebase services used</h2>
+      <p class="small">
+        The MVP system uses a minimal set of Firebase services:
+      </p>
+      <ul class="small">
+        <li><b>Firebase Authentication (Anonymous)</b> — to obtain an authenticated context for Firestore rules</li>
+        <li><b>Cloud Firestore</b> — as the shared state storage and real-time synchronization mechanism</li>
+      </ul>
+
+      <p class="small">
+        Other Firebase services (Hosting, Functions, Storage, etc.) are not required for this system
+        and remain disabled unless specifically needed later.
+      </p>
+    </div>
+
+    <div class="card" id="auth">
+      <h2>5. Authentication strategy</h2>
+      <p class="small">
+        The system uses Firebase <b>anonymous authentication</b>. This is a technical mechanism that creates
+        an authenticated session without user accounts.
+      </p>
+      <p class="small">
+        The goal is not identity management. The goal is to ensure that Firestore requests have
+        <code>request.auth != null</code>, enabling simple security rules.
+      </p>
+
+      <details>
+        <summary>Why not user accounts?</summary>
+        <p class="small">
+          User accounts add friction (registration, password resets, permissions) and increase maintenance burden.
+          For a small group application, the password gate + anonymous auth is sufficient.
+        </p>
+      </details>
+    </div>
+
+    <div class="card" id="gate">
+      <h2>6. Password gate design</h2>
+      <p class="small">
+        The password gate is a UI overlay that blocks access until a correct password is provided.
+        The password is never stored in the source code. Instead, the gate validates by comparing a SHA-256 hash.
+      </p>
+
+      <details open>
+        <summary>Stored values</summary>
+        <pre><code>config/security
+  passwordHash: string   // sha256(password)
+  adminHash:    string   // sha256(adminPassword) (optional but recommended)</code></pre>
+      </details>
+
+      <p class="small">
+        The password gate must be understood correctly: it protects the user interface from casual access,
+        but it is not a substitute for proper Firestore access rules. The actual data protection is enforced by
+        Firestore security rules. The gate exists mainly to prevent non-members from interacting with the system.
+      </p>
+
+      <details>
+        <summary>Why a hash and not plaintext?</summary>
+        <p class="small">
+          Storing plaintext passwords is a security anti-pattern. Hashing prevents accidental disclosure
+          and avoids a “secret in cleartext” problem in the database. SHA-256 is sufficient here because
+          the threat model is small-group access control. If stronger protection is desired, a salted hash
+          scheme can be added later.
+        </p>
+      </details>
+    </div>
+
+    <div class="card" id="data-model">
+      <h2>7. Firestore data model</h2>
+      <p class="small">
+        The application state is stored as a single document to simplify reasoning and synchronization:
+      </p>
+
+      <details open>
+        <summary>Primary state document</summary>
+        <pre><code>state/main
   persons: Person[]
   events: Event[]
-  mvpCooldown: number
-  </code></pre>
+  mvpCooldown: number</code></pre>
+      </details>
+
+      <details>
+        <summary>Person structure</summary>
+        <pre><code>Person
+  id: string
+  name: string
+  title: boolean
+  blocked: boolean
+  mvpCount: number
+  cooldownLeft: number
+  placements: Placement[]
+
+Placement
+  event: number
+  place: number</code></pre>
+      </details>
+
+      <details>
+        <summary>Why single-document state?</summary>
+        <p class="small">
+          A single-document state avoids partial updates and complicated joins. It also makes backup/export trivial:
+          the entire system can be restored by replacing one document.
+          This approach scales well for small datasets (dozens of persons, hundreds of events).
+          If you ever approach Firestore document size limits, you would split the model into collections,
+          but that is intentionally out-of-scope for now.
+        </p>
+      </details>
+    </div>
+
+    <div class="card" id="realtime">
+      <h2>8. Real-time synchronization</h2>
+      <p class="small">
+        The frontend subscribes to the state document using Firestore’s real-time listener (<code>onSnapshot</code>).
+        Whenever the document changes, all clients receive the update and re-render the UI.
+      </p>
+      <p class="small">
+        This creates a “shared truth” experience similar to collaborative documents. It also reduces the need
+        for manual refreshes or polling.
+      </p>
+      <details>
+        <summary>Expected behavior</summary>
+        <ul class="small">
+          <li>When one user adds a person, everyone sees it immediately.</li>
+          <li>When one user saves an event, all participants see updated placements.</li>
+          <li>When admin performs import/reset/undo, state changes atomically for all users.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="card" id="writes">
+      <h2>9. Write strategy and consistency</h2>
+      <p class="small">
+        Writes are performed by updating the full top-level fields of <code>state/main</code>. This is a trade-off:
+        it is simple and deterministic, but simultaneous conflicting edits can cause last-write-wins behavior.
+      </p>
+      <p class="small">
+        This is acceptable for the intended usage model: usually one person performs edits at a time, and the group
+        agrees on changes before performing them.
+      </p>
+
+      <details>
+        <summary>Consistency notes</summary>
+        <ul class="small">
+          <li>Firestore provides atomic document writes.</li>
+          <li>Last-write-wins can happen if two users edit at the same time.</li>
+          <li>The system intentionally does not attempt to merge edits.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="card" id="admin">
+      <h2>10. Admin mode</h2>
+      <p class="small">
+        Admin mode is a session-local state (browser session only). Unlocking admin mode enables destructive operations:
+        import, reset, and undo. This separation reduces accidental data loss.
+      </p>
+
+      <details open>
+        <summary>Admin unlock design</summary>
+        <p class="small">
+          Admin unlock validates the admin password by SHA-256 hashing the input and comparing it to
+          <code>config/security.adminHash</code>. If successful, a flag is written to <code>sessionStorage</code>.
+          This flag is not shared across users and is cleared when the browser session ends (or when the admin locks).
+        </p>
+      </details>
+
+      <p class="small">
+        Admin mode is intentionally not persisted in Firestore because admin privileges should not be granted globally.
+      </p>
+    </div>
+
+    <div class="card" id="backup">
+      <h2>11. Export / Import</h2>
+      <p class="small">
+        Export produces a JSON file containing the entire current application state.
+        Import replaces the entire state with a JSON payload.
+      </p>
+      <p class="small">
+        Import is a destructive operation because it overwrites the shared document. Therefore, it is restricted
+        to admin mode and is paired with an automatic undo snapshot.
+      </p>
+
+      <details>
+        <summary>Recommended backup practice</summary>
+        <ul class="small">
+          <li>Export before major changes (season reset, rule adjustments).</li>
+          <li>Keep backups in a shared location accessible to admins.</li>
+          <li>Name backups with date and context (e.g. season-end).</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="card" id="undo">
+      <h2>12. Undo mechanism</h2>
+      <p class="small">
+        Undo is implemented as a snapshot restore mechanism. Before import or reset, the system stores the current state
+        as a snapshot in <code>state/undo</code>. Undo then writes the snapshot back into <code>state/main</code>.
+      </p>
+
+      <details open>
+        <summary>Key properties</summary>
+        <ul class="small">
+          <li>Deterministic: undo restores exactly the previous state.</li>
+          <li>Safe: undo is restricted to admin mode.</li>
+          <li>Simple: no merging, no diff logic, no partial restore.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary>What undo does not do</summary>
+        <ul class="small">
+          <li>Undo does not reconcile changes made after the snapshot.</li>
+          <li>Undo does not maintain multiple history steps (single-step undo only).</li>
+          <li>Undo does not attempt to interpret intent — it just restores a state.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="card" id="security-rules">
+      <h2>13. Firestore security rules</h2>
+      <p class="small">
+        The rules should ensure that only authenticated users can read/write the shared state, while allowing
+        the password hash document to be readable so the gate can validate.
+      </p>
+
+      <details open>
+        <summary>Example rule set (minimal)</summary>
+        <pre><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /state/{doc} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /config/{doc} {
+      allow read: if true;
+    }
+  }
+}</code></pre>
+      </details>
+
+      <p class="small">
+        Note: This rule set is intentionally simple. If you want stronger restrictions (e.g. only allow reads on
+        config/security and no other config docs), refine the match statements accordingly.
+      </p>
+    </div>
+
+    <div class="card" id="deployment">
+      <h2>14. Deployment and DNS</h2>
+      <p class="small">
+        This wiki is hosted on GitHub Pages and mapped to <code>wiki.zabini.org</code> using a DNS CNAME record.
+        It is recommended to enforce HTTPS in GitHub Pages settings.
+      </p>
+
+      <details>
+        <summary>Common DNS configuration</summary>
+        <pre><code>CNAME
+Name: wiki
+Target: &lt;your-github-username&gt;.github.io</code></pre>
+      </details>
+
+      <p class="small">
+        If you see <code>NXDOMAIN</code>, DNS propagation or record configuration is incomplete.
+        If you see the site but without CSS, the asset path is wrong — always use absolute paths.
+      </p>
+    </div>
+
+    <div class="card" id="debugging">
+      <h2>15. Debugging checklist</h2>
+      <ul class="small">
+        <li><b>Plain HTML only:</b> CSS path is broken. Verify <code>/assets/wiki.css</code> returns HTTP 200.</li>
+        <li><b>No background image:</b> verify <code>/documentations-background-image.jpg</code> exists and returns 200.</li>
+        <li><b>Login never unlocks:</b> check <code>config/security.passwordHash</code> exists and matches SHA-256 of the password.</li>
+        <li><b>Admin unlock fails:</b> check <code>config/security.adminHash</code> exists and matches SHA-256 of admin password.</li>
+        <li><b>Firestore permission errors:</b> confirm Firestore rules and anonymous auth are enabled.</li>
+      </ul>
+    </div>
+
+    <div class="card" id="maintenance">
+      <h2>16. Maintenance & extension guidelines</h2>
+      <p class="small">
+        When extending the system, preserve the core properties: transparency, determinism, and low operational overhead.
+        Recommended approach:
+      </p>
+      <ul class="small">
+        <li>Prefer explicit data fields over derived hidden state.</li>
+        <li>Document every rule that affects scoring or eligibility.</li>
+        <li>Keep destructive operations behind admin mode.</li>
+        <li>Export before any major structural change.</li>
+      </ul>
+      <p class="small">
+        If you introduce additional documentation pages, link them from the Documentation Hub to keep navigation discoverable.
+      </p>
+    </div>
+
+    <div class="footer">
+      Zabini Wiki · MVP Code Documentation · Internal reference
+    </div>
+
+  </div>
 </div>
 
-<div class="card">
-  <h2>6. Real-Time Synchronization</h2>
-  <p class="small">
-    The application subscribes to Firestore updates using a real-time listener.
-    Any change to the state document is immediately propagated to all connected clients.
-  </p>
-  <p class="small">
-    This behavior is similar to collaborative document editing systems and ensures that all users
-    always see the same data.
-  </p>
-</div>
-
-<div class="card">
-  <h2>7. Admin Mode</h2>
-  <p class="small">
-    Administrative actions are intentionally separated from regular application usage.
-    Admin mode is unlocked using a dedicated password and stored only in the current browser session.
-  </p>
-  <p class="small">
-    Admin mode enables destructive operations and should therefore be used sparingly.
-  </p>
-</div>
-
-<div class="card">
-  <h2>8. Undo Mechanism</h2>
-  <p class="small">
-    Before any destructive action (import or reset), the current application state is copied
-    to a dedicated undo document.
-  </p>
-  <p class="small">
-    Undo restores the exact previous state without attempting to merge or reconcile changes.
-    This guarantees deterministic behavior.
-  </p>
-</div>
-
-<div class="card">
-  <h2>9. Maintenance Considerations</h2>
-  <p class="small">
-    The system is intentionally conservative. New features should be evaluated carefully to avoid
-    increasing complexity or introducing hidden state.
-  </p>
-</div>
+<script type="module" src="/assets/wiki.js"></script>
+</body>
+</html>

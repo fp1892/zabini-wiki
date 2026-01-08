@@ -1,77 +1,349 @@
-<div class="card">
-  <h2>Purpose and Scope</h2>
-  <p class="kicker">
-    The MVP application determines a fair and transparent MVP candidate based on historical
-    performance and balancing rules.
-  </p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zabini Wiki · MVP Application</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/assets/wiki.css" />
+</head>
+<body>
+
+<!-- LOGIN GATE -->
+<div id="loginOverlay">
+  <div id="loginPanel">
+    <h2>MVP Application Documentation</h2>
+    <div class="small">
+      This documentation is protected by the same password gate as the MVP application.
+    </div>
+    <form id="loginForm" style="margin-top:10px;">
+      <input id="passwordInput" type="password" placeholder="Password" required />
+      <button type="submit" style="margin-top:10px;">Unlock</button>
+    </form>
+    <div id="loginStatus"></div>
+  </div>
 </div>
 
-<div class="card">
-  <h2>1. Person Representation</h2>
-  <p class="small">
-    Each participant is represented as a persistent entity. All historical data remains
-    attached to the person until explicitly removed by an admin.
-  </p>
-</div>
+<!-- PROTECTED CONTENT -->
+<div id="protectedRoot" style="display:none;">
+  <div class="container">
 
-<div class="card">
-  <h2>2. Event Recording</h2>
-  <p class="small">
-    An event represents a single competitive session. For each event, up to ten placements
-    can be recorded.
-  </p>
-  <p class="small">
-    Participants without a placement automatically receive a default value to avoid bias.
-  </p>
-</div>
+    <div class="header">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>MVP Application</h1>
+          <div class="kicker">User and admin guide: actions, rules, and MVP scoring behavior</div>
+        </div>
+      </div>
+      <div class="nav">
+        <a class="pill" href="/">Documentation Hub</a>
+        <a class="pill" href="/mvp-code/">MVP Code</a>
+      </div>
+    </div>
 
-<div class="card">
-  <h2>3. MVP Cooldown Rule</h2>
-  <p class="small">
-    The cooldown mechanism prevents the same person from becoming MVP repeatedly in short succession.
-  </p>
-  <p class="small">
-    Cooldown is decremented only when MVP is awarded, not per event.
-  </p>
-</div>
+    <div class="card">
+      <h2>Document purpose</h2>
+      <p class="small">
+        This document explains the functional behavior of the Hellcats MVP application from both a regular user
+        perspective and an administrator perspective.
+      </p>
+      <p class="small">
+        The documentation is intentionally explicit. Every visible action, button, rule, and scoring decision is described
+        so the system remains transparent and predictable for all participants.
+      </p>
+    </div>
 
-<div class="card">
-  <h2>4. MVP Calculation</h2>
-  <p class="small">
-    The MVP score is calculated using an intentionally simple formula.
-    The goal is interpretability rather than mathematical optimization.
-  </p>
-  <pre><code>
-averagePlacement = sum(placements) / numberOfPlacements
+    <div class="card">
+      <h2>Table of contents</h2>
+      <ul class="small">
+        <li><a href="#concepts">1. Core concepts</a></li>
+        <li><a href="#persons">2. Persons and fields</a></li>
+        <li><a href="#adding">3. Adding and managing persons</a></li>
+        <li><a href="#events">4. Events and placements</a></li>
+        <li><a href="#cooldown">5. MVP cooldown</a></li>
+        <li><a href="#mvp-award">6. Awarding MVP</a></li>
+        <li><a href="#eligibility">7. Eligibility rules</a></li>
+        <li><a href="#calculation">8. MVP calculation and scoring</a></li>
+        <li><a href="#admin-mode">9. Admin mode overview</a></li>
+        <li><a href="#export">10. Export backup</a></li>
+        <li><a href="#import">11. Import backup</a></li>
+        <li><a href="#reset">12. Reset state</a></li>
+        <li><a href="#undo">13. Undo</a></li>
+        <li><a href="#recommended-workflow">14. Recommended group workflow</a></li>
+        <li><a href="#common-mistakes">15. Common mistakes and how to avoid them</a></li>
+      </ul>
+    </div>
+
+    <div class="card" id="concepts">
+      <h2>1. Core concepts</h2>
+      <p class="small">
+        The application tracks a set of participants (persons). Over time, events are recorded.
+        Each event represents one session of play (or one evaluation period) and includes placements for up to
+        ten participants.
+      </p>
+      <p class="small">
+        Based on accumulated event placements and balancing rules, the system proposes a “Next MVP” candidate.
+        The system is designed to be transparent and deterministic:
+        if two users look at the app at the same time, they should see the same state and the same computed result.
+      </p>
+    </div>
+
+    <div class="card" id="persons">
+      <h2>2. Persons and fields</h2>
+      <p class="small">
+        Each person contains the following fields and meaning:
+      </p>
+      <ul class="small">
+        <li><b>Name</b> — The display name of the participant.</li>
+        <li><b>MVP count</b> — How many times this person has been awarded MVP historically.</li>
+        <li><b>Average placement</b> — The arithmetic mean of all recorded placements (lower is better).</li>
+        <li><b>Cooldown</b> — A countdown value that prevents immediate re-selection after receiving MVP.</li>
+        <li><b>Title flag</b> — A balancing flag that applies a score penalty.</li>
+        <li><b>Blocked flag</b> — Excludes the person from MVP selection entirely.</li>
+      </ul>
+
+      <details>
+        <summary>Why these fields exist</summary>
+        <p class="small">
+          The goal is balancing and fairness. Average placement reflects performance, MVP count prevents one person
+          from dominating repeatedly, cooldown forces rotation, title allows manual balancing, and blocked is a strict
+          exclusion mechanism for special cases.
+        </p>
+      </details>
+    </div>
+
+    <div class="card" id="adding">
+      <h2>3. Adding and managing persons</h2>
+      <p class="small">
+        The “Add Person” section creates a new participant. The person starts with:
+      </p>
+      <ul class="small">
+        <li>no placements</li>
+        <li>mvpCount = 0</li>
+        <li>cooldownLeft = 0</li>
+        <li>title = false</li>
+        <li>blocked = false</li>
+      </ul>
+
+      <details open>
+        <summary>Title action</summary>
+        <p class="small">
+          The “Title” action toggles the title flag. When enabled, a fixed penalty is applied to the person’s MVP score.
+          This is a balancing tool. It allows you to reduce the probability of selecting the same person repeatedly,
+          even if they consistently perform well.
+        </p>
+      </details>
+
+      <details>
+        <summary>Block action</summary>
+        <p class="small">
+          The “Block” action toggles the blocked flag. When blocked, the person is excluded from MVP selection regardless
+          of performance. This is stronger than cooldown or title penalty.
+        </p>
+      </details>
+
+      <details>
+        <summary>Remove action</summary>
+        <p class="small">
+          Removing a person deletes the participant from the state. This also removes their historical placements and MVP count.
+          Use this carefully because it is not reversible unless you restore from backup or undo (if the removal was part of
+          a restored state).
+        </p>
+      </details>
+    </div>
+
+    <div class="card" id="events">
+      <h2>4. Events and placements</h2>
+      <p class="small">
+        An event represents one session. The interface provides ten placement slots (Place 1 to Place 10).
+        You select participants for each slot. Each participant can appear only once in the top ten for that event.
+      </p>
+      <p class="small">
+        Participants not selected in the top ten automatically receive a default placement value of <b>15</b>.
+        This ensures that all persons get a placement for every event, which is required for meaningful averages.
+      </p>
+
+      <details>
+        <summary>Why default placement is 15</summary>
+        <p class="small">
+          The default value is intentionally not extreme. It represents “outside the top ten” performance without being
+          infinite or undefined. The numeric choice can be adjusted later if your group’s event size changes.
+        </p>
+      </details>
+    </div>
+
+    <div class="card" id="cooldown">
+      <h2>5. MVP cooldown</h2>
+      <p class="small">
+        Cooldown is a fairness mechanism. After a person receives MVP, their cooldown counter is set to the configured
+        MVP cooldown value. While cooldownLeft is greater than zero, the person is not eligible for MVP selection.
+      </p>
+      <p class="small">
+        The cooldown value is configured globally and applies to everyone equally.
+      </p>
+
+      <details>
+        <summary>How cooldown decreases</summary>
+        <p class="small">
+          Cooldown decreases when MVP is awarded (not automatically per event). Each time an MVP is given,
+          every person with cooldownLeft &gt; 0 is decremented by 1. The newly awarded person then receives
+          cooldownLeft = mvpCooldown.
+        </p>
+      </details>
+    </div>
+
+    <div class="card" id="mvp-award">
+      <h2>6. Awarding MVP</h2>
+      <p class="small">
+        Clicking the “MVP” button on a person applies two effects:
+      </p>
+      <ul class="small">
+        <li>All existing cooldowns are decremented by 1 (for persons where cooldownLeft &gt; 0).</li>
+        <li>The selected person’s mvpCount is incremented by 1 and cooldownLeft is set to the global cooldown value.</li>
+      </ul>
+
+      <p class="small">
+        This makes MVP assignment a discrete event that updates the fairness state of the whole system.
+      </p>
+    </div>
+
+    <div class="card" id="eligibility">
+      <h2>7. Eligibility rules</h2>
+      <p class="small">
+        When calculating the next MVP candidate, the system filters out ineligible participants:
+      </p>
+      <ul class="small">
+        <li>Blocked persons are excluded.</li>
+        <li>Persons with cooldownLeft &gt; 0 are excluded.</li>
+        <li>Persons without any recorded placements are excluded (no performance data).</li>
+      </ul>
+      <p class="small">
+        If no eligible persons remain, the result is “Not enough eligible persons”.
+      </p>
+    </div>
+
+    <div class="card" id="calculation">
+      <h2>8. MVP calculation and scoring</h2>
+      <p class="small">
+        The score formula is intentionally simple and interpretable. It combines performance (average placement)
+        and fairness (MVP history and title penalty).
+      </p>
+
+      <details open>
+        <summary>Formula</summary>
+        <pre><code>avgPlace = sum(placements.place) / count(placements)
 
 score =
-  (20 - averagePlacement) * 3
+  (20 - avgPlace) * 3
   + (10 - mvpCount)
-  - titlePenalty
-  </code></pre>
+
+if title:
+  score -= TITLE_PENALTY</code></pre>
+      </details>
+
+      <p class="small">
+        Interpretation:
+      </p>
+      <ul class="small">
+        <li>Lower average placement increases the score (better performance).</li>
+        <li>Higher mvpCount decreases the score (prevents repeated MVP dominance).</li>
+        <li>Title reduces the score (manual balancing tool).</li>
+      </ul>
+
+      <details>
+        <summary>Why this is deterministic</summary>
+        <p class="small">
+          For a given state document, the score computation is purely functional:
+          the same input always yields the same output. No randomness is involved.
+        </p>
+      </details>
+    </div>
+
+    <div class="card" id="admin-mode">
+      <h2>9. Admin mode overview</h2>
+      <p class="small">
+        Admin mode enables operations that can overwrite or erase data. For safety, these operations are disabled
+        for regular users and require admin unlock.
+      </p>
+      <p class="small">
+        Admin mode is session-based: unlocking admin affects only your browser session and does not grant privileges
+        globally to all users.
+      </p>
+    </div>
+
+    <div class="card" id="export">
+      <h2>10. Export backup</h2>
+      <p class="small">
+        Export creates a JSON file containing the entire state of the application. It is the recommended method
+        to preserve a snapshot before major changes.
+      </p>
+    </div>
+
+    <div class="card" id="import">
+      <h2>11. Import backup</h2>
+      <p class="small">
+        Import replaces the entire state with the contents of the uploaded JSON file. This can be used to restore
+        from backup or migrate data.
+      </p>
+      <p class="small">
+        Import is restricted to admin mode. Before import is applied, the system automatically stores an undo snapshot.
+      </p>
+    </div>
+
+    <div class="card" id="reset">
+      <h2>12. Reset state</h2>
+      <p class="small">
+        Reset clears the entire system state (persons, events, cooldown). It is intended for season restarts or
+        complete reinitialization.
+      </p>
+      <p class="small">
+        Reset is restricted to admin mode. Before reset is applied, the system automatically stores an undo snapshot.
+      </p>
+    </div>
+
+    <div class="card" id="undo">
+      <h2>13. Undo</h2>
+      <p class="small">
+        Undo restores the system state to exactly what it was before the last import or reset.
+        It does not merge changes; it simply overwrites the shared state with the stored snapshot.
+      </p>
+      <details>
+        <summary>What undo covers</summary>
+        <ul class="small">
+          <li>Undo covers import and reset (destructive operations).</li>
+          <li>Undo does not create a long history (single-step undo only).</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="card" id="recommended-workflow">
+      <h2>14. Recommended group workflow</h2>
+      <ul class="small">
+        <li>Add all participants once, then keep the list stable.</li>
+        <li>For each session, agree on top ten placements before saving the event.</li>
+        <li>Use Calculate MVP to propose a candidate.</li>
+        <li>After MVP is confirmed, award MVP using the MVP button.</li>
+        <li>Use Export regularly to keep backups.</li>
+      </ul>
+    </div>
+
+    <div class="card" id="common-mistakes">
+      <h2>15. Common mistakes and how to avoid them</h2>
+      <ul class="small">
+        <li><b>Forgetting to save an event:</b> Placements are only recorded when “Save Event” is pressed.</li>
+        <li><b>Assigning the same person twice in top ten:</b> The UI should prevent duplicates; verify before saving.</li>
+        <li><b>Using reset accidentally:</b> Only admins can reset. Always export first.</li>
+        <li><b>Expecting cooldown to decrease per event:</b> Cooldown decreases per MVP award, not per event.</li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      Zabini Wiki · MVP Application Documentation · Internal reference
+    </div>
+
+  </div>
 </div>
 
-<div class="card">
-  <h2>5. Eligibility Rules</h2>
-  <ul class="small">
-    <li>Blocked participants are excluded</li>
-    <li>Participants on cooldown are excluded</li>
-    <li>At least one recorded event is required</li>
-  </ul>
-</div>
-
-<div class="card">
-  <h2>6. Administrative Actions</h2>
-  <p class="small">
-    Administrative actions exist to recover from mistakes or migrate data.
-    They are not intended for regular usage.
-  </p>
-</div>
-
-<div class="card">
-  <h2>7. Expected Behavior</h2>
-  <p class="small">
-    The system assumes good faith usage. All rules are deterministic and produce
-    the same result for all users at all times.
-  </p>
-</div>
+<script type="module" src="/assets/wiki.js"></script>
+</body>
+</html>

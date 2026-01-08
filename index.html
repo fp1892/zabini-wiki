@@ -1,57 +1,74 @@
-<div class="card">
-  <h2>Documentation Hub</h2>
-  <p class="kicker">
-    This wiki serves as the central documentation space for the Zabini MVP system.
-    It is intended to provide long-term, maintainable documentation for both
-    technical maintainers and application users.
-  </p>
-  <p class="small">
-    All documentation is protected by the same login mechanism as the MVP application itself.
-    Access is intentionally restricted to ensure internal consistency and prevent misuse.
-  </p>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zabini Wiki</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/assets/wiki.css" />
+</head>
+<body>
 
-<div class="card">
-  <h2>MVP Code Documentation</h2>
-  <p class="small">
-    This section documents the complete technical implementation of the MVP system.
-    It explains architectural decisions, data flow, authentication concepts, Firestore
-    state management, admin functionality, undo mechanics and long-term maintenance considerations.
-  </p>
-  <p class="small">
-    This documentation is written for developers, maintainers and technically inclined administrators.
-    It is intentionally verbose and explanatory rather than tutorial-style.
-  </p>
-  <div style="margin-top:16px;">
-    <a class="pill" href="/mvp-code/">Open technical documentation</a>
+<div id="loginOverlay">
+  <div id="loginPanel">
+    <h2>Zabini Wiki</h2>
+    <form id="loginForm">
+      <input id="passwordInput" type="password" placeholder="Password" required />
+      <button type="submit" style="margin-top:10px;">Unlock</button>
+    </form>
+    <div id="loginStatus"></div>
   </div>
 </div>
 
-<div class="card">
-  <h2>MVP Application Documentation</h2>
-  <p class="small">
-    This section describes the functional behavior of the MVP application itself.
-    It explains all available actions, buttons, workflows and rules from a user and admin perspective.
-  </p>
-  <p class="small">
-    The goal is to make the system transparent, predictable and fair for all participants.
-    Every calculation and rule is documented explicitly.
-  </p>
-  <div style="margin-top:16px;">
-    <a class="pill" href="/mvp-app/">Open application documentation</a>
+<div id="protectedRoot" style="display:none;">
+  <div class="container">
+
+    <div class="header">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>Documentation Hub</h1>
+          <div class="kicker">Internal documentation for the Zabini MVP system</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Overview</h2>
+      <p class="small">
+        This wiki is the central documentation space for the Zabini MVP system.
+        It provides long-term, maintainable documentation for both technical maintainers
+        and application users.
+      </p>
+      <p class="small">
+        Access is protected using the same login mechanism as the MVP application itself.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>MVP Code Documentation</h2>
+      <p class="small">
+        Detailed technical documentation covering architecture, Firebase integration,
+        authentication, state synchronization, admin workflows and undo mechanics.
+      </p>
+      <a class="pill" href="/mvp-code/">Open technical documentation</a>
+    </div>
+
+    <div class="card">
+      <h2>MVP Application Documentation</h2>
+      <p class="small">
+        Functional documentation explaining all user actions, rules, calculations
+        and administrative features of the MVP application.
+      </p>
+      <a class="pill" href="/mvp-app/">Open application documentation</a>
+    </div>
+
+    <div class="footer">
+      Zabini Wiki · Internal use only
+    </div>
+
   </div>
 </div>
 
-<div class="card">
-  <h2>Documentation Scope</h2>
-  <p class="small">
-    This wiki intentionally avoids short summaries. Instead, it focuses on precise
-    explanations, explicit assumptions and clear reasoning behind every system behavior.
-  </p>
-  <ul class="small">
-    <li>No undocumented side effects</li>
-    <li>No hidden rules</li>
-    <li>No implicit assumptions</li>
-    <li>Long-term maintainability over brevity</li>
-  </ul>
-</div>
+<script type="module" src="/assets/wiki.js"></script>
+</body>
+</html>
