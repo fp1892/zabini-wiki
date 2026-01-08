@@ -1,200 +1,101 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <title>MVP App – Zabini Wiki</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="../assets/wiki.css" />
-</head>
-<body>
-
-<div id="loginOverlay">
-  <div id="loginPanel">
-    <h2>MVP App</h2>
-    <div class="small">Bitte Passwort eingeben.</div>
-    <form id="loginForm" style="margin-top:10px;">
-      <input id="passwordInput" type="password" placeholder="Passwort" required />
-      <div style="margin-top:10px;"><button type="submit">Anmelden</button></div>
-    </form>
-    <div id="loginStatus"></div>
-  </div>
+<div class="card">
+  <h2>Purpose</h2>
+  <p class="kicker">
+    The Hellcats MVP application determines the next MVP based on performance,
+    fairness rules and historical results.
+  </p>
 </div>
 
-<div id="protectedRoot" style="display:none;">
-  <div class="container">
-    <div class="header">
-      <div class="brand">
-        <div class="logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M4 7l4 6 4-8 4 8 4-6v12H4V7z" stroke="rgba(212,175,55,.95)" stroke-width="1.7" />
-          </svg>
-        </div>
-        <div>
-          <h1>MVP APP</h1>
-          <div class="subtitle">Alle Buttons, Regeln, Berechnungen & Admin-Workflows</div>
-        </div>
-      </div>
-      <div class="nav">
-        <a class="pill" href="/">🏠 Wiki</a>
-        <a class="pill" href="/mvp-code/">📜 MVP Code</a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>1) Grundprinzip</h2>
-      <p class="kicker">
-        Die App verwaltet Personen, Event-Platzierungen (Top 10) und berechnet daraus den „Next MVP“.
-        Alles wird live für alle synchronisiert (Firestore).
-      </p>
-      <details open>
-        <summary>Objekte</summary>
-        <div class="small">
-          <b>Person</b> enthält:
-          <ul>
-            <li><code>name</code></li>
-            <li><code>title</code> (★)</li>
-            <li><code>blocked</code> (✖)</li>
-            <li><code>mvpCount</code></li>
-            <li><code>cooldownLeft</code></li>
-            <li><code>placements[]</code> → Liste aus <code>{event, place}</code></li>
-          </ul>
-        </div>
-      </details>
-    </div>
-
-    <div class="card">
-      <h2>2) Buttons & Funktionen</h2>
-
-      <details open>
-        <summary>➕ Add</summary>
-        <div class="small">
-          Legt eine neue Person an, setzt Default-Werte und speichert in Firestore.
-        </div>
-      </details>
-
-      <details>
-        <summary>⭐ Title</summary>
-        <div class="small">
-          Toggle <code>title</code>. In der MVP-Berechnung gibt es dafür eine Strafpunkt-Regel (Title-Penalty).
-        </div>
-      </details>
-
-      <details>
-        <summary>🚫 Block / Unblock</summary>
-        <div class="small">
-          Blocked Personen werden bei der MVP-Berechnung ausgeschlossen.
-        </div>
-      </details>
-
-      <details>
-        <summary>🏆 MVP</summary>
-        <div class="small">
-          Erhöht <code>mvpCount</code> um 1 und setzt <code>cooldownLeft</code> auf den aktuellen Cooldown.
-          Zusätzlich: Bei jedem MVP-Klick wird für alle Personen der Cooldown runtergezählt.
-        </div>
-      </details>
-
-      <details>
-        <summary>✖ Entfernen</summary>
-        <div class="small">
-          Entfernt die Person komplett aus der Liste.
-        </div>
-      </details>
-
-      <details>
-        <summary>🧾 Save Event</summary>
-        <div class="small">
-          Erzeugt ein neues Event (laufende Nummer), liest die Top-10-Auswahl, schreibt pro Person eine Placement:
-          <ul>
-            <li>Platz 1–10 wenn ausgewählt</li>
-            <li>sonst default <code>place = 15</code></li>
-          </ul>
-        </div>
-      </details>
-
-      <details>
-        <summary>🧠 Calculate MVP</summary>
-        <div class="small">
-          Berechnet den besten Kandidaten unter den „eligible persons“:
-          <ul>
-            <li>Nicht blocked</li>
-            <li><code>cooldownLeft == 0</code></li>
-            <li>Mindestens eine Placement vorhanden</li>
-          </ul>
-        </div>
-      </details>
-    </div>
-
-    <div class="card">
-      <h2>3) MVP-Berechnung (genau)</h2>
-      <p class="kicker">
-        Die App bildet aus Placements einen Durchschnitt und daraus einen Score. Höchster Score gewinnt.
-      </p>
-
-      <details open>
-        <summary>Formel</summary>
-        <pre><code>avgPlace = sum(place) / count(placements)
-
-score = (20 - avgPlace) * 3 + (10 - mvpCount)
-
-if (title) score -= TITLE_PENALTY</code></pre>
-        <div class="small">
-          Interpretation:
-          <ul>
-            <li>Besserer Schnitt (kleiner avgPlace) → höherer Score</li>
-            <li>Viele frühere MVPs → Score sinkt</li>
-            <li>Title → zusätzliche Strafe</li>
-          </ul>
-        </div>
-      </details>
-
-      <details>
-        <summary>Warum default place = 15?</summary>
-        <div class="small">
-          Damit nicht ausgewählte Personen im Event “schlechter” gewertet werden, aber nicht unendlich schlecht.
-        </div>
-      </details>
-    </div>
-
-    <div class="card">
-      <h2>4) Admin Funktionen</h2>
-      <details open>
-        <summary>🔐 Admin Unlock</summary>
-        <div class="small">
-          Admin-Passwort wird SHA-256 gehasht und mit <code>config/security.adminHash</code> verglichen.
-          Bei Erfolg werden Import/Reset/Undo freigeschaltet.
-        </div>
-      </details>
-
-      <details>
-        <summary>⬆ Import JSON</summary>
-        <div class="small">
-          Überschreibt <code>state/main</code> mit dem importierten Inhalt.
-          Vorher wird automatisch ein Undo-Snapshot gespeichert.
-        </div>
-      </details>
-
-      <details>
-        <summary>🗑 Reset</summary>
-        <div class="small">
-          Setzt <code>persons/events</code> zurück (leert). Vorher Undo-Snapshot.
-        </div>
-      </details>
-
-      <details>
-        <summary>↩ Undo</summary>
-        <div class="small">
-          Stellt den Stand <b>vor</b> dem letzten Import/Reset wieder her, indem <code>state/undo</code> zurück nach <code>state/main</code> geschrieben wird.
-        </div>
-      </details>
-    </div>
-
-    <div class="footer">
-      Wenn du willst, kann ich dir hier zusätzlich eine „Quick Start“-Sektion für neue Clan-Mitglieder reinschreiben.
-    </div>
-  </div>
+<div class="card">
+  <h2>1. Person Entity</h2>
+  <ul class="small">
+    <li>Name</li>
+    <li>Title flag (penalty applied)</li>
+    <li>Blocked flag (excluded from MVP)</li>
+    <li>MVP count</li>
+    <li>Cooldown counter</li>
+    <li>Event placements</li>
+  </ul>
 </div>
 
-<script type="module" src="../assets/wiki.js"></script>
-</body>
-</html>
+<div class="card">
+  <h2>2. Adding and Managing Persons</h2>
+  <details open>
+    <summary>Add Person</summary>
+    <p class="small">
+      Creates a new participant with default values.
+    </p>
+  </details>
+  <details>
+    <summary>Block / Unblock</summary>
+    <p class="small">
+      Blocked persons are excluded from MVP calculations.
+    </p>
+  </details>
+  <details>
+    <summary>Title</summary>
+    <p class="small">
+      A title applies a fixed score penalty to prevent repeat MVP dominance.
+    </p>
+  </details>
+</div>
+
+<div class="card">
+  <h2>3. Events and Placements</h2>
+  <p class="small">
+    Each event records placements from 1 to 10. All other participants
+    automatically receive a default placement of 15.
+  </p>
+</div>
+
+<div class="card">
+  <h2>4. MVP Cooldown</h2>
+  <p class="small">
+    After receiving MVP, a person becomes temporarily ineligible.
+    The cooldown decreases after each MVP assignment.
+  </p>
+</div>
+
+<div class="card">
+  <h2>5. MVP Calculation</h2>
+  <pre><code>
+averagePlace = sum(placements) / count(placements)
+
+score = (20 - averagePlace) * 3
+        + (10 - mvpCount)
+
+if title:
+  score -= TITLE_PENALTY
+  </code></pre>
+</div>
+
+<div class="card">
+  <h2>6. Admin Features</h2>
+  <details open>
+    <summary>Import JSON</summary>
+    <p class="small">
+      Replaces the entire application state. Automatically creates an undo snapshot.
+    </p>
+  </details>
+  <details>
+    <summary>Reset</summary>
+    <p class="small">
+      Clears all persons and events. Undo is available afterwards.
+    </p>
+  </details>
+  <details>
+    <summary>Undo</summary>
+    <p class="small">
+      Restores the state before the last import or reset.
+    </p>
+  </details>
+</div>
+
+<div class="card">
+  <h2>7. Expected Usage Rules</h2>
+  <ul class="small">
+    <li>One event per session</li>
+    <li>Placements should be agreed upon before saving</li>
+    <li>Admin actions should be used carefully</li>
+  </ul>
+</div>

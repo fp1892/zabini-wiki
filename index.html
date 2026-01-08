@@ -1,94 +1,54 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <title>Zabini Wiki</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="assets/wiki.css" />
-</head>
-<body>
+<div class="card">
+  <h2>Documentation Hub</h2>
+  <p class="kicker">
+    This wiki contains all internal documentation for the Zabini MVP system.
+    Each section below focuses on a specific aspect of the project.
+  </p>
+</div>
 
-<div id="loginOverlay">
-  <div id="loginPanel">
-    <div class="brand" style="margin-bottom:10px;">
-      <div class="logo" aria-hidden="true">
-        <!-- simple crown icon -->
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M4 7l4 6 4-8 4 8 4-6v12H4V7z" stroke="rgba(212,175,55,.95)" stroke-width="1.7" />
-        </svg>
-      </div>
-      <div>
-        <h2 style="margin:0;">Zabini Wiki</h2>
-        <div class="small">Login wie bei der MVP-App</div>
-      </div>
-    </div>
-
-    <form id="loginForm">
-      <input id="passwordInput" type="password" placeholder="Passwort" required />
-      <div style="display:flex; gap:10px; margin-top:10px;">
-        <button type="submit">Anmelden</button>
-        <span class="badge" title="Schützt alle Wiki-Seiten">🔒 Protected</span>
-      </div>
-    </form>
-
-    <div id="loginStatus"></div>
+<div class="card">
+  <h2>📜 MVP Code Documentation</h2>
+  <p class="small">
+    Technical documentation for developers and maintainers.
+    Explains architecture, Firebase integration, security, state management,
+    admin workflows, undo logic, and design decisions.
+  </p>
+  <div style="display:flex; gap:10px; margin-top:10px;">
+    <span class="badge">Developer</span>
+    <span class="badge">Active</span>
+    <span class="badge">Internal</span>
+  </div>
+  <div style="margin-top:14px;">
+    <a class="pill" href="/mvp-code/">Open MVP Code Wiki →</a>
   </div>
 </div>
 
-<div id="protectedRoot" style="display:none;">
-  <div class="container">
-    <div class="header">
-      <div class="brand">
-        <div class="logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M4 7l4 6 4-8 4 8 4-6v12H4V7z" stroke="rgba(212,175,55,.95)" stroke-width="1.7" />
-          </svg>
-        </div>
-        <div>
-          <h1>ZABINI WIKI</h1>
-          <div class="subtitle">Dokumentation: Code & App-Funktionen</div>
-        </div>
-      </div>
-
-      <div class="nav">
-        <a class="pill" href="/mvp-code/">
-          <span>📜</span><span>MVP Code</span>
-        </a>
-        <a class="pill" href="/mvp-app/">
-          <span>🧭</span><span>MVP App</span>
-        </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Übersicht</h2>
-      <p class="kicker">
-        Hier findest du zwei präzise Dokumentationen:
-      </p>
-
-      <details open>
-        <summary>📜 /mvp-code</summary>
-        <div class="small">
-          Vollständige Code-Dokumentation: Architektur, Firebase/Firestore, Login-Gate, Module/Imports,
-          Live-Sync, Admin-Mode, Backup, Import, Reset, Undo – inkl. erklärter Abschnitte & Snippets.
-        </div>
-      </details>
-
-      <details open>
-        <summary>🧭 /mvp-app</summary>
-        <div class="small">
-          Bedienungs- und Funktions-Dokumentation: alle Buttons, Datenmodell, Event-Logik,
-          Top-10-Platzierungen, MVP-Berechnung, Cooldown/Title/Block Regeln, Admin-Workflows.
-        </div>
-      </details>
-    </div>
-
-    <div class="footer">
-      Hinweis: Diese Wiki ist bewusst “static” (GitHub Pages) + Login-Gate über Firebase (wie die App).
-    </div>
+<div class="card">
+  <h2>🧭 MVP Application Guide</h2>
+  <p class="small">
+    User-facing documentation for the Hellcats MVP application.
+    Describes all buttons, workflows, scoring logic, cooldown rules,
+    MVP calculation, admin functions and undo behavior.
+  </p>
+  <div style="display:flex; gap:10px; margin-top:10px;">
+    <span class="badge">User</span>
+    <span class="badge">Active</span>
+    <span class="badge">Live</span>
+  </div>
+  <div style="margin-top:14px;">
+    <a class="pill" href="/mvp-app/">Open MVP App Wiki →</a>
   </div>
 </div>
 
-<script type="module" src="assets/wiki.js"></script>
-</body>
-</html>
+<div class="card">
+  <h2>🗂 Future Documentation</h2>
+  <p class="small">
+    Additional documentation sections may be added here in the future:
+  </p>
+  <ul class="small">
+    <li>Season handling & resets</li>
+    <li>Rule variations & scoring presets</li>
+    <li>Public API or export formats</li>
+    <li>Clan onboarding guide</li>
+  </ul>
+</div>
